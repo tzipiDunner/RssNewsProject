@@ -1,15 +1,20 @@
-﻿using System.Net;
+using System.Net;
 using Microsoft.Extensions.Caching.Memory;
 using System.Xml.Linq;
 using NewsDisplay.Models;
 using NewsDisplay.Services;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 public class NewsService : INewsService
 {
     private const string RssCacheKey = "RssFeed";
     private readonly IMemoryCache _memoryCache;
     private readonly string _rssFeedUrl;
+    private readonly SemaphoreSlim _cacheLock = new SemaphoreSlim(1, 1);
 
     public NewsService(IMemoryCache memoryCache, IConfiguration configuration)
     {
@@ -19,6 +24,8 @@ public class NewsService : INewsService
 
     public async Task<List<NewsItem>> GetNewsItemsAsync()
     {
+        await _cacheLock.WaitAsync();
+
         try
         {
             if (!_memoryCache.TryGetValue(RssCacheKey, out XDocument cachedRssFeed))
@@ -50,10 +57,16 @@ public class NewsService : INewsService
             Console.WriteLine($"Error in GetNewsItemsAsync: {ex.Message}");
             return new List<NewsItem>();
         }
+        finally
+        {
+            _cacheLock.Release();
+        }
     }
 
     public async Task<NewsItem> GetNewsItemByIdAsync(int id)
     {
+        await _cacheLock.WaitAsync();
+
         try
         {
             var rssFeed = _memoryCache.Get<XDocument>(RssCacheKey);
@@ -77,8 +90,11 @@ public class NewsService : INewsService
         {
             Console.WriteLine($"Error in GetNewsItemByIdAsync: {ex.Message}");
         }
+        finally
+        {
+            _cacheLock.Release();
+        }
 
         return null;
     }
 }
-
