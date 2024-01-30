@@ -23,7 +23,7 @@ namespace YourProject.Controllers
             return Ok(topics);
         }
 
-        [HttpGet("{id}")]
+        /*[HttpGet("{id}")]
         public async Task<ActionResult<NewsItem>> GetNewsById(int id)
         {
             var topic = await _newsService.GetNewsItemByIdAsync(id);
@@ -34,6 +34,6 @@ namespace YourProject.Controllers
             }
 
             return Ok(topic);
-        }
+        }*/
     }
 }
